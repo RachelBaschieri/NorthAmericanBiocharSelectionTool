@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soil Analysis Form</title>
+</head>
+<body>
+    <h1>Soil Analysis Form</h1>
+
+    <form method="post">
+        <label for="moisture">Soil Moisture (%):</label>
+        <input type="text" id="moisture" name="moisture" required>
+        <br><br>
+
+        <label for="organic_matter">Organic Matter (%):</label>
+        <input type="text" id="organic_matter" name="organic_matter" required>
+        <br><br>
+
+        <label for="phosphorus">Phosphorus (ppm):</label>
+        <input type="text" id="phosphorus" name="phosphorus" required>
+        <br><br>
+
+        <!-- Add the remaining fields similarly -->
+        <label for="potassium">Potassium (ppm):</label>
+        <input type="text" id="potassium" name="potassium" required>
+        <br><br>
+
+        <label for="available_N">Plant available N (either NH4+/NO3-) (ppm):</label>
+        <input type="text" id="available_N" name="available_N" required>
+        <br><br>
+
+        <label for="ph">pH:</label>
+        <input type="text" id="ph" name="ph" required>
+        <br><br>
+
+        <label for="sand">Sand (%):</label>
+        <input type="text" id="sand" name="sand" required>
+        <br><br>
+
+        <label for="silt">Silt (%):</label>
+        <input type="text" id="silt" name="silt" required>
+        <br><br>
+
+        <label for="clay">Clay (%):</label>
+        <input type="text" id="clay" name="clay" required>
+        <br><br>
+
+        <input type="submit" value="Submit">
+    </form>
+
+    {% if data %}
+        <h2>Submitted Data:</h2>
+        <ul>
+            {% for key, value in data.items() %}
+                <li>{{ key }}: {{ value }}</li>
+            {% endfor %}
+        </ul>
+        {% if messages %}
+            <h3>Messages:</h3>
+            <ul>
+                {% for key, value in messages.items() %}
+                    <li>{{ value }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endif %}
+
+    <h2>Select Crop</h2>
+    <form action="/select_crop" method="POST">
+        <label for="crop">Choose a crop:</label>
+        <select name="crop" id="crop">
+            {% for crop in crops %}
+                <option value="{{ crop.Crop }}">{{ crop.Crop }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">Get Nutrient and pH Requirements</button>
+    </form>
+
+    
+</body>
+</html>

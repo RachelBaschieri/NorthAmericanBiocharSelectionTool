@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Entry Form</title>
+</head>
+<body>
+    <h1>Data Entry Form</h1>
+
+    <form method="post" action="/select_crop">
+        <label for="moisture">Soil Moisture (%):</label>
+        <input type="text" id="moisture" name="moisture" required>
+        <br><br>
+
+        <label for="organic_matter">Organic Matter (%):</label>
+        <input type="text" id="organic_matter" name="organic_matter" required>
+        <br><br>
+
+        <label for="phosphorus">Phosphorus (ppm):</label>
+        <input type="text" id="phosphorus" name="phosphorus" required>
+        <br><br>
+
+        <label for="potassium">Potassium (ppm):</label>
+        <input type="text" id="potassium" name="potassium" required>
+        <br><br>
+
+        <label for="available_N">Plant available N (either NH4+/NO3-) (ppm):</label>
+        <input type="text" id="available_N" name="available_N" required>
+        <br><br>
+
+        <label for="pH">pH:</label>
+        <input type="text" id="pH" name="pH" required>
+        <br><br>
+
+        <label for="sand">Sand (%):</label>
+        <input type="text" id="sand" name="sand" required>
+        <br><br>
+
+        <label for="silt">Silt (%):</label>
+        <input type="text" id="silt" name="silt" required>
+        <br><br>
+
+        <label for="clay">Clay (%):</label>
+        <input type="text" id="clay" name="clay" required>
+        <br><br>
+
+        <label for="zip_code">Enter Your Zip Code:</label>
+        <input type="text" id="zip_code" name="zip_code" required>
+        <br><br>
+
+        <h2>Select Crop</h2>
+        <label for="crop">Choose a crop:</label>
+        <select name="crop" id="crop">
+            {% for crop in crops %}
+                <option value="{{ crop.Crop }}">{{ crop.Crop }}</option>
+            {% endfor %}
+        </select>
+
+        <br><br>
+        <input type="submit" value="Submit">
+    </form>
+
+
+    <!-- Display any messages from the server -->
+    {% if messages %}
+        <div>
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% if soil_data %}
+    <h2>Submitted Data:</h2>
+    <ul>
+      {% for key, value in soil_data.items() %}
+        <li>{{ key }}: {{ value }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    <!-- Hidden fields to carry previously submitted data -->
+    <input type="hidden" name="moisture" value="{{ soil_data.get('Soil Moisture (%)') }}">
+    <input type="hidden" name="organic_matter" value="{{ soil_data.get('Organic Matter (%)') }}">
+    <input type="hidden" name="phosphorus" value="{{ soil_data.get('Phosphorus (ppm)') }}">
+    <input type="hidden" name="potassium" value="{{ soil_data.get('Potassium (ppm)') }}">
+    <input type="hidden" name="available_N" value="{{ soil_data.get('Plant available Nitrogen (either NH4+/NO3-) (ppm)') }}">
+    <input type="hidden" name="pH" value="{{ soil_data.get('pH') }}">
+    <input type="hidden" name="sand" value="{{ soil_data.get('Sand (%)') }}">
+    <input type="hidden" name="silt" value="{{ soil_data.get('Silt (%)') }}">
+    <input type="hidden" name="clay" value="{{ soil_data.get('Clay (%)') }}">
+  
+    {% if crop_data %}
+        <h2>Crop Requirements:</h2>
+        <ul>
+            <li>Required Phosphorus (lbs/acre): {{ crop_data.get('Required Phosphorus (lbs/acre)') }}</li>
+            <li>Required Potassium (lbs/acre): {{ crop_data.get('Required Potassium (lbs/acre)') }}</li>
+            <li>Required Nitrogen (lbs/acre): {{ crop_data.get('Required Nitrogen (lbs/acre)') }}</li>
+            {% if 'Required Lime (lbs/acre)' in crop_data %}
+                <li>Required Lime (lbs/acre): {{ crop_data.get('Required Lime (lbs/acre)') }}</li>
+            {% endif %}
+        </ul>
+    {% endif %}
+
+
+   <!-- Display Biochar Recommendations -->
+{% if biochar_results %}
+<h2>Top 5 Biochar Matches:</h2>
+<!-- Phosphorus -->
+<h3>Phosphorus</h3>
+<table border="1">
+    <tr>
+        <th>Sample Name</th>
+        <th>Extractable P (lbs/ton)</th>
+    </tr>
+    {% for sample in biochar_results.phosphorus %}
+    <tr>
+        <td>{{ sample.Sample }}</td>
+        <td>{{ sample.ExtractablePlbs1ton }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<!-- Potassium -->
+<h3>Potassium</h3>
+<table border="1">
+    <tr>
+        <th>Sample Name</th>
+        <th>K (lbs/ton)</th>
+    </tr>
+    {% for sample in biochar_results.potassium %}
+    <tr>
+        <td>{{ sample.Sample }}</td>
+        <td>{{ sample.Klb_1ton }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<!-- Nitrogen -->
+<h3>Nitrogen</h3>
+<table border="1">
+    <tr>
+        <th>Sample Name</th>
+        <th>N (lbs/ton)</th>
+    </tr>
+    {% for sample in biochar_results.nitrogen %}
+    <tr>
+        <td>{{ sample.Sample }}</td>
+        <td>{{ sample.Plant_available_Nlbs_1ton }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<!-- Lime (optional) -->
+{% if 'Required Lime (lbs/acre)' in crop_data %}
+<h3>CaCO3eq</h3>
+<table border="1">
+    <tr>
+        <th>Sample Name</th>
+        <th>CaCO3 (lbs/ton)</th>
+    </tr>
+    {% for sample in biochar_results.lime %}
+    <tr>
+        <td>{{ sample.Sample }}</td>
+        <td>{{ sample.CaCO3lb_1ton}}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endif %}
+{% endif %}
+
+<!-- Display Closest Biochar Locations -->
+{% if biochars %}
+<h2>Closest Biochar Locations:</h2>
+<table border="1">
+    <tr>
+        <th>Biochar Name</th>
+        <th>Address</th>
+        <th>Distance (miles)</th>
+    </tr>
+    {% for biochar, distance in biochars %}
+    <tr>
+        <td>{{ biochar.Sample }}</td>
+        <td>{{ biochar.Address }}</td>
+        <td>{{ distance }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endif %}
+
+
+</body>
+</html>
+ 
