@@ -6,10 +6,13 @@ from geopy.distance import geodesic
 import os
 
 app = Flask(__name__)
-app.secret_key = os.getenv('SECRET_KEY', 'default_secret_key')
+app.secret_key = os.environ.get('SECRET_KEY', 'your_secret_key')
 
 # Configure PostgreSQL database URI
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+app.config['SQLALCHEMY_DATABASE_URI'] = (
+    f"postgresql://{os.environ.get('RENDER_DB_USERNAME')}:{os.environ.get('RENDER_DB_PASSWORD')}"
+    f"@{os.environ.get('RENDER_DB_HOST')}:{os.environ.get('RENDER_DB_PORT')}/{os.environ.get('RENDER_DB_NAME')}"
+)
 db = SQLAlchemy(app)
 
 @app.route('/')
