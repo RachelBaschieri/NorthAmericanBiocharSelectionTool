@@ -5,7 +5,7 @@ from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
 import os
 
-app = Flask(__name__)
+app = Flask(__name__,static_folder='static', template_folder='templates')
 app.secret_key = os.environ.get('SECRET_KEY', 'your_secret_key')
 
 # Configure PostgreSQL database URI
