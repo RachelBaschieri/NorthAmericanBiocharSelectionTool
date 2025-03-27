@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Data Entry Form</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script>
         // Function to fetch crops based on the selected state
         async function fetchCropsByState() {
@@ -437,6 +438,6 @@
         <p class="text-danger mt-3">Please enter a valid application rate greater than 0.</p>
     {% endif %}
     
-
+     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
