@@ -15,7 +15,9 @@ app.config['SQLALCHEMY_DATABASE_URI'] = (
 )
 db = SQLAlchemy(app)
 
-@app.route('/')
+@app.route("/")
+def home():
+    return render_template("index.html")
 def index():
     return redirect(url_for('analyze_soil_and_biochar'))
 
