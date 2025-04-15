@@ -3,16 +3,23 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import asc, func, desc
 from geopy.geocoders import Nominatim 
 from geopy.distance import geodesic
+from dotenv import load_dotenv
 import os
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'your_secret_key')
 
-# Configure PostgreSQL database URI
-app.config['SQLALCHEMY_DATABASE_URI'] = (
-    f"postgresql://{os.environ.get('RENDER_DB_USERNAME')}:{os.environ.get('RENDER_DB_PASSWORD')}"
-    f"@{os.environ.get('RENDER_DB_HOST')}:{os.environ.get('RENDER_DB_PORT')}/{os.environ.get('RENDER_DB_NAME')}"
-)
+# Securely retrieve secret key and database URL
+secret_key = os.getenv('SECRET_KEY')
+database_url = os.getenv('DATABASE_URL')
+
+if not secret_key:
+    raise ValueError("SECRET_KEY environment variable is missing!")
+if not database_url:
+    raise ValueError("DATABASE_URL environment variable is missing!")
+
+app.secret_key = secret_key
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+
 db = SQLAlchemy(app)
 
 @app.route('/')
@@ -122,40 +129,41 @@ class Priority(db.Model):
 
 # Function to classify soil based on sand, silt, and clay percentages
 def classify_soil(sand, silt, clay):
-    total = sand + silt + clay
-    if total != 100:
-        return "Invalid soil composition, percentages do not add up to 100."
-
-    if clay >= 40 and silt >= 40:
-        return "Silty Clay"
-    elif clay >= 40 and sand >= 45:
-        return "Sandy Clay"
-    elif clay >= 40:
-        return "Clay"
-    elif clay >= 27 and clay < 40 and silt >= 28 and silt < 40:
-        return "Clay Loam"
-    elif clay >= 27 and clay < 40 and sand >= 20 and sand < 45:
-        return "Sandy Clay Loam"
-    elif clay >= 20 and clay < 27 and sand >= 50 and sand < 80:
-        return "Sandy Loam"
-    elif clay >= 20 and clay < 27 and silt >= 28:
-        return "Loam"
-    elif silt >= 50 and clay < 12:
-        return "Silt"
-    elif silt >= 50:
-        return "Silt Loam"
-    elif silt >= 28 and clay >= 7 and clay < 20:
-        return "Loam"
-    elif sand >= 70:
-        return "Sand"
-    elif sand >= 52 and silt >= 12 and silt < 28:
-        return "Loamy Sand"
+    texture_total = sand + silt + clay
+    if texture_total != 100:
+        return "Invalid soil composition, percentages do not add up to 100. Please enter valid soil composition."
+    elif texture_total == 100:
+        if clay >= 40 and silt >= 40:
+            return "Silty Clay"
+        elif clay >= 40 and sand >= 45:
+            return "Sandy Clay"
+        elif clay >= 40:
+            return "Clay"
+        elif clay >= 27 and clay < 40 and silt >= 28 and silt < 40:
+            return "Clay Loam"
+        elif clay >= 27 and clay < 40 and sand >= 20 and sand < 45:
+            return "Sandy Clay Loam"
+        elif clay >= 20 and clay < 27 and sand >= 50 and sand < 80:
+            return "Sandy Loam"
+        elif clay >= 20 and clay < 27 and silt >= 28:
+            return "Loam"
+        elif silt >= 50 and clay < 12:
+            return "Silt"
+        elif silt >= 50:
+            return "Silt Loam"
+        elif silt >= 28 and clay >= 7 and clay < 20:
+            return "Loam"
+        elif sand >= 70:
+            return "Sand"
+        elif sand >= 52 and silt >= 12 and silt < 28:
+            return "Loamy Sand"
     else:
         return "Unclassified"
 
 # Function to get latitude and longitude of the user's zip code
 def get_lat_lon_from_zip(zip_code):
-    geolocator = Nominatim(user_agent="sdi_biochar_search_location3.py (rachel.baschieri@usda.gov)")
+    user_agent = os.getenv("GEOLOCATOR_USER_AGENT", "biochar_search_app")
+    geolocator = Nominatim(user_agent=user_agent)
     location = geolocator.geocode(zip_code)
     if location:
         return (location.latitude, location.longitude)
@@ -195,31 +203,18 @@ def analyze_soil_and_biochar():
     organic_matter_message = ""
     lime_message = ""
     priority_list = []
-    priority_results = {}
     show_priorities_form = False
-    selected_biochar = None
-    selected_biochar_details = None
     
     if request.method == 'POST' and 'zip_code' in request.form:
     # Fetch all unique states from the Crop table
         states = [state[0] for state in db.session.query(Crop.State).distinct().order_by(Crop.State.asc()).all()]
         session['states'] = states
-    #Initialize results dictionaries
-        messages = {}
-        data = None
-        soil_data = {}
-        biochar_results = None
-        closest_biochars = None
-        soil_type = None
-    # Initialize messages
-        moisture_message = ""
-        organic_matter_message = ""
-        lime_message = ""
+
 # Fetch all priorities from the database
         priorities = Priority.query.all()
     # Extract the priority names into a list
         priority_list = [p.priority for p in priorities]
-    
+
     # Get the form inputs
         selected_state = request.form.get('state')
         selected_crop = request.form.get('crop')
@@ -245,14 +240,14 @@ def analyze_soil_and_biochar():
             "Clay (%)": float(request.form.get("clay"))
         }
         session['soil_data'] = soil_data
-
+       
          # Custom crop inputs
         custom_nitrogen = request.form.get('custom_nitrogen', type=float)
         custom_phosphorus = request.form.get('custom_phosphorus', type=float)
         custom_potassium = request.form.get('custom_potassium', type=float)
         custom_ph_min = request.form.get('custom_ph_min', type=float)
         custom_ph_max = request.form.get('custom_ph_max', type=float)
-        
+
         # Soil Moisture statement
         soil_moisture = float(request.form.get("moisture"))
         # Check soil moisture levels and set appropriate messages
@@ -271,7 +266,7 @@ def analyze_soil_and_biochar():
             "with a high average pore diameter to facilitate drainage."
             )
         session['moisture_message'] = moisture_message
-
+        
         #Organic Matter statement
         om = float(request.form.get("organic_matter"))
         if om <= 1:
@@ -298,64 +293,113 @@ def analyze_soil_and_biochar():
             )
         session['organic_matter_message'] = organic_matter_message
 
-        # Classify soil type
+        # Classify soil type and define texture factor for lime requirement
         soil_type = classify_soil(sand, silt, clay)
         session['soil_type'] = soil_type
+        
         texture_factors = {
-                    "sandy loam": 3,
-                    "sand": 2,
-                }
-
+                "sandy loam": 3,
+                "sand": 2,
+                "Invalid soil composition, percentages do not add up to 100. Please enter valid soil composition.": 0,
+            }
         soil_texture_factor = texture_factors.get(soil_type.lower(), 4)
-                
-
+        
+         # Use custom crop inputs if provided
         if custom_nitrogen or custom_phosphorus or custom_potassium or custom_ph_min or custom_ph_max:
-            # Use custom crop inputs if provided
+           
             phosphorus_needed = max(0, custom_phosphorus - (soil_data["Phosphorus (ppm)"] * 2.2913))
             potassium_needed = max(0, custom_potassium - (soil_data["Potassium (ppm)"] * 1.2046))
             nitrogen_needed = max(0, custom_nitrogen - (soil_data["Plant available Nitrogen (either NH4+/NO3-) (ppm)"] * 2))
             lime_needed = 0
         
-            if user_pH < custom_ph_min:
+            if user_pH < custom_ph_min and soil_type != "Invalid soil composition, percentages do not add up to 100. Please enter valid soil composition.":
                 almost_lime_needed = (custom_ph_min - user_pH) * soil_texture_factor
                 lime_needed = (almost_lime_needed * 2204.62) / 2.47105
+                lime_message = ("Lime recommendations are approximations estimated by: (crop ideal pH minimum - current soil pH) * soil texture factor. For more accurate liming recommendations please contact your local extension experts.")
             elif user_pH > custom_ph_max:
                 lime_message = "Soil pH is higher than the maximum for this crop, consider applying elemental sulfur."
             else:
                 lime_message = "No lime needed. Your soil pH is within the recommended range for this crop."
+            session['lime_message'] = lime_message
+                # Fetch top 5 biochar samples based on closest values to nutrient needs
+            top_phosphorus = ExtractableP.query.order_by(func.abs(ExtractableP.ExtractablePlbs1ton - phosphorus_needed)).limit(5).all()
+            top_potassium = ExtractableNutrients.query.order_by(func.abs(ExtractableNutrients.Klb_1ton - potassium_needed)).limit(5).all()
+            top_nitrogen = PlantAvailableN.query.order_by(func.abs(PlantAvailableN.Plant_available_Nlbs_1ton - nitrogen_needed)).limit(5).all()
+            top_lime = CaCO3Eq.query.filter(CaCO3Eq.CaCO3lb_1ton > 0).order_by(func.abs(CaCO3Eq.CaCO3lb_1ton - lime_needed)).limit(5).all()
+            
+            # Store the results in session
+            session['top_phosphorus'] = [(p.Sample, p.ExtractablePlbs1ton) for p in top_phosphorus]
+            session['top_potassium'] = [(k.Sample, k.Klb_1ton) for k in top_potassium]
+            session['top_nitrogen'] = [(n.Sample, n.Plant_available_Nlbs_1ton) for n in top_nitrogen]
+            session['top_lime'] = [(l.Sample, l.CaCO3lb_1ton) for l in top_lime]
+
+
+            # Compile biochar results for rendering
+            biochar_results = {
+                "phosphorus": top_phosphorus,
+                "potassium": top_potassium,
+                "nitrogen": top_nitrogen,
+                "lime": top_lime
+            }
+
+            # Compile the required nutrient amounts for rendering
+            data = {
+                "crop": "Custom crop",
+                "Required Phosphorus (lbs/acre)": phosphorus_needed,
+                "Required Potassium (lbs/acre)": potassium_needed,
+                "Required Nitrogen (lbs/acre)": nitrogen_needed,
+            }
+
+            if lime_needed > 0:
+                data["Required Lime (lbs/acre)"] = lime_needed
+            #Store the crop nutrient requirements
+            session['data'] = data
+
+             # Zip Code to Biochar Location Distance Calculation
+            user_lat_lon = get_lat_lon_from_zip(user_zip)
+            if user_lat_lon:
+                distances = calculate_distances(user_lat_lon)
+                closest_biochars = distances[:5]  # Get the top 5 closest biochars
+                session['closest_biochars'] = [(biochar.Sample, distance) for biochar, distance in closest_biochars]
+                
+
+            else:
+                messages = "Unable to find location for the given zip code."
+
         else:
             pass
 
-        # Fetch selected crop details
-        
+        # Fetch selected crop details if selected from dropdown menu
         crop = Crop.query.filter_by(State=selected_state, Crop=selected_crop).first()
 
         if crop:
-                # Calculate nutrient needs
+            # Calculate nutrient needs
             phosphorus_needed = max(0, float(crop.P_upper_rate) - (float(soil_data["Phosphorus (ppm)"]) * 2.2913))
             potassium_needed = max(0, float(crop.K_upper_rate) - (float(soil_data["Potassium (ppm)"]) * 1.2046))
             nitrogen_needed = max(0, float(crop.N_upper_rate) - (float(soil_data["Plant available Nitrogen (either NH4+/NO3-) (ppm)"]) * 2))
             lime_needed = 0
-            #lime requirement calculation
-            # Check if the user's pH is lower than pH_min
-            if user_pH < float(crop.pH_min):
-                almost_lime_needed = (float(crop.pH_min) - user_pH) * soil_texture_factor
-                lime_needed = (almost_lime_needed * 2204.62)/2.47105
-
+            nitrogen_needed = round(nitrogen_needed, 2)
+             # Check if the user's pH is lower than pH_min
+            if soil_type == "Invalid soil composition, percentages do not add up to 100. Please enter valid soil composition.":
+                lime_needed = 0
+            if user_pH < float(crop.pH_min) and soil_type != "Invalid soil composition, percentages do not add up to 100. Please enter valid soil composition.":
+                lime_needed_t_ha = (float(crop.pH_min) - user_pH) * soil_texture_factor
+                lime_needed = (lime_needed_t_ha * 2204.62)/2.47105
+                lime_needed = round(lime_needed, 2)
+                lime_message = ("Lime recommendations are approximations estimated by: (crop ideal pH minimum - current soil pH) * soil texture factor. For more accurate liming recommendations please contact your local extension experts.")
             # Check if the user's pH is higher than pH_max
             elif user_pH > float(crop.pH_max):
-                lime_message = (
-                    "Soil pH is higher than the maximum for this crop, consider applying elemental sulfur."
-                )
-                
+               lime_message = (
+                "Soil pH is higher than the maximum for this crop, consider applying elemental sulfur."
+               )
+            
             # If pH is within range, no lime is needed
-            else:
+            elif float(crop.pH_min) <= user_pH <= float(crop.pH_max):
                 lime_message = (
-                    "No lime needed. Your soil pH is within the recommended range for this crop."
-                    )
-        else:
-            pass
-
+                "No lime needed. Your soil pH is within the recommended range for this crop."
+                )    
+                            
+            session['lime_message'] = lime_message
             # Fetch top 5 biochar samples based on closest values to nutrient needs
             top_phosphorus = ExtractableP.query.order_by(func.abs(ExtractableP.ExtractablePlbs1ton - phosphorus_needed)).limit(5).all()
             top_potassium = ExtractableNutrients.query.order_by(func.abs(ExtractableNutrients.Klb_1ton - potassium_needed)).limit(5).all()
@@ -379,7 +423,7 @@ def analyze_soil_and_biochar():
 
             # Compile the required nutrient amounts for rendering
             data = {
-                "Crop": selected_crop,
+                "crop": selected_crop,
                 "Required Phosphorus (lbs/acre)": phosphorus_needed,
                 "Required Potassium (lbs/acre)": potassium_needed,
                 "Required Nitrogen (lbs/acre)": nitrogen_needed,
@@ -389,26 +433,25 @@ def analyze_soil_and_biochar():
                 data["Required Lime (lbs/acre)"] = lime_needed
             #Store the crop nutrient requirements
             session['data'] = data
-
-
+             
              # Zip Code to Biochar Location Distance Calculation
             user_lat_lon = get_lat_lon_from_zip(user_zip)
             if user_lat_lon:
                 distances = calculate_distances(user_lat_lon)
                 closest_biochars = distances[:5]  # Get the top 5 closest biochars
-                print(closest_biochars)
                 session['closest_biochars'] = [(biochar.Sample, distance) for biochar, distance in closest_biochars]
-                #Store distances as a dictionary for later
-                session['distances'] = {biochar.Sample: distance for biochar, distance in distances}
+                
 
             else:
                 messages = "Unable to find location for the given zip code."
 
+        else:
+            pass
 
         # After processing the soil data, display the priorities form
         show_priorities_form = True
 
-        return render_template('index_1.html', soil_data=soil_data, messages=messages, lime_message=lime_message, crops=states, crop_data=data, biochar_results=biochar_results, biochars=closest_biochars, soil_type = soil_type, moisture_message=moisture_message, organic_matter_message = organic_matter_message, priority_list=priority_list, show_priorities_form=show_priorities_form)
+        return render_template('sdi_biochar_search15.html', soil_data=soil_data, messages=messages, lime_message=lime_message, crops=states, crop_data=data, biochar_results=biochar_results, biochars=closest_biochars, soil_type = soil_type, moisture_message=moisture_message, organic_matter_message = organic_matter_message, priority_list=priority_list, show_priorities_form=show_priorities_form)
 
    
     elif request.method == 'POST' and 'priority1' in request.form:
@@ -420,6 +463,7 @@ def analyze_soil_and_biochar():
         soil_type = session.get('soil_type', None)
         moisture_message = session.get('moisture_message', None)
         organic_matter_message = session.get('organic_matter_message', None)
+        lime_message = session.get('lime_message', None)
         priority_list= {}
         data = session.get('data', {})
         submitted_priorities = {
@@ -437,10 +481,6 @@ def analyze_soil_and_biochar():
         #user_zip = session.get('user_zip')
         soil_data = session.get('soil_data')
         closest_biochars = session.get('closest_biochars', [])
-        #user_lat_lon = get_lat_lon_from_zip(user_zip)
-        #if user_lat_lon:
-                #distances = calculate_distances(user_lat_lon)
-                #closest_biochars = distances[:5]
 
         # Iterate through the submitted priorities
         for key, p in submitted_priorities.items():
@@ -497,7 +537,7 @@ def analyze_soil_and_biochar():
                 query_result = closest_biochars
                 columns = ['Sample', 'Distance']
                 priority_results[key] = {'columns': columns, 'data': query_result}
-    
+        session['priority_results'] = priority_results
         # Points assignment for each priority
         priority_points = {
         'priority1': [15, 14, 13, 12, 11],
@@ -516,16 +556,9 @@ def analyze_soil_and_biochar():
 
         # Sort samples by total points in descending order
         ranked_samples = sorted(points.items(), key=lambda x: x[1], reverse=True)
-
-        # Display the ranked samples
-        print("Ranked Samples:")
-        for sample, total_points in ranked_samples:
-            print(f"{sample}: {total_points} points")
-
         
-        return render_template('index_1.html', priority_results = priority_results, soil_data=soil_data, messages=messages, lime_message=lime_message, crops=states, crop_data=data, biochar_results=biochar_results, soil_type = soil_type, moisture_message=moisture_message, organic_matter_message = organic_matter_message, priority_list=priority_list, submitted_priorities=submitted_priorities, ranked_samples=ranked_samples, show_priorities_form=False)
+        return render_template('sdi_biochar_search15.html', priority_results = priority_results, soil_data=soil_data, messages=messages, lime_message=lime_message, crops=states, crop_data=data, biochar_results=biochar_results, soil_type = soil_type, moisture_message=moisture_message, organic_matter_message = organic_matter_message, priority_list=priority_list, submitted_priorities=submitted_priorities, ranked_samples=ranked_samples, show_priorities_form=False)
     
-
     elif request.method == 'POST' and 'selected_biochar' in request.form and 'application_rate' not in request.form:
         selected_biochar = request.form.get('selected_biochar')
         submitted_priorities = session.get('submitted_priorities')
@@ -533,6 +566,7 @@ def analyze_soil_and_biochar():
         moisture_message = session.get('moisture_message', None)
         organic_matter_message = session.get('organic_matter_message', None)
         priority_list= {}
+        priority_results = {}
         data = session.get('data', {})
         amendment_rate_rec = []
         if selected_biochar:
@@ -560,7 +594,7 @@ def analyze_soil_and_biochar():
                     if p == 'N requirement':
                         available_N = availableN
                         crop_N_req = data.get("Required Nitrogen (lbs/acre)", 0)
-                        print(f"Nitrogen needed is: {crop_N_req}")
+        
                         if available_N < 1:
                             amendment_rate_rec.append(("N requirement", f"{available_N} lb/ton", "This biochar is not a good source of N."))
                         else:
@@ -619,7 +653,7 @@ def analyze_soil_and_biochar():
                     elif p == 'Biochar nearby':
                         distances_dict = session.get('distances', {})
                         selected_distance = distances_dict.get(selected_biochar)
-                        print(selected_distance)
+                       
                         if selected_distance is not None:
                             amendment_rate_rec.append(("Biochar nearby", f"{selected_distance:.2f} miles", "Amend soil with up to 10 tons/acre."))
                         else:
@@ -628,17 +662,17 @@ def analyze_soil_and_biochar():
                 amendment_rec_render = {'columns': ['Priority', 'Characteristic', 'Recommendation'], 'data': amendment_rate_rec}
             else:
                 selected_biochar_details = None
-        return render_template('index_1.html', priority_results=priority_results, soil_data=soil_data, messages=messages, lime_message=lime_message, crops=states, crop_data=data, biochar_results=biochar_results, soil_type = soil_type, moisture_message=moisture_message, organic_matter_message = organic_matter_message, priority_list=priority_list, selected_biochar = selected_biochar, selected_biochar_details = selected_biochar_details, selected_biochar_details_dict = selected_biochar_details_dict, amendment_rec_render = amendment_rec_render, show_priorities_form=False)
+        return render_template('sdi_biochar_search15.html', priority_results=priority_results, soil_data=soil_data, messages=messages, lime_message=lime_message, crops=states, crop_data=data, biochar_results=biochar_results, soil_type = soil_type, moisture_message=moisture_message, organic_matter_message = organic_matter_message, priority_list=priority_list, selected_biochar = selected_biochar, selected_biochar_details = selected_biochar_details, selected_biochar_details_dict = selected_biochar_details_dict, amendment_rec_render = amendment_rec_render,submitted_priorities=submitted_priorities, show_priorities_form=False)
         
         
     
     elif request.method == 'POST' and 'application_rate' in request.form:
-        print("In the application_rate form")
-        selected_biochar = request.form.get('selected_biochar')
         submitted_priorities = session.get('submitted_priorities')
+        priority_results = {}
         soil_type = session.get('soil_type', None)
         moisture_message = session.get('moisture_message', None)
         organic_matter_message = session.get('organic_matter_message', None)
+        lime_message = session.get('lime_message', None)
         data = session.get('data', {})
         amendment_rate_rec = []
         amendment_rec_render = {}
@@ -647,11 +681,11 @@ def analyze_soil_and_biochar():
         application_rate = float(request.form.get('application_rate', 0))
         selected_biochar_details = session.get('selected_biochar_details', {})
         selected_biochar_details_dict = session.get('selected_biochar_details_dict', {})
-        print(selected_biochar_details)
+        
                  # Unpack details (avoid querying the DB again)
         availableN = selected_biochar_details.get('availableN', 0)
         extractableP = selected_biochar_details.get('extractableP', 0)
-        extractableK = selected_biochar_details.get('extractablek', 0)
+        extractableK = selected_biochar_details.get('extractableK', 0)
         extractableCa = selected_biochar_details.get('extractableCa', 0)
         extractableMg = selected_biochar_details.get('extractableMg', 0)
         caco3 = selected_biochar_details.get('caco3', 0)
@@ -670,7 +704,7 @@ def analyze_soil_and_biochar():
         
         else:
             app_rate_benefits = None
-        return render_template('index_1.html', priority_results=priority_results, soil_data=soil_data, messages=messages, lime_message=lime_message, crops=states, crop_data=data, biochar_results=biochar_results, soil_type = soil_type, moisture_message=moisture_message, organic_matter_message = organic_matter_message, priority_list=priority_list, selected_biochar = selected_biochar, selected_biochar_details = selected_biochar_details, selected_biochar_details_dict = selected_biochar_details_dict, amendment_rec_render = amendment_rec_render,application_rate = application_rate, app_rate_benefits = app_rate_benefits, show_priorities_form=False)
+        return render_template('sdi_biochar_search15.html', priority_results=priority_results, soil_data=soil_data, messages=messages, lime_message=lime_message, crops=states, crop_data=data, biochar_results=biochar_results, soil_type = soil_type, moisture_message=moisture_message, organic_matter_message = organic_matter_message, priority_list=priority_list, selected_biochar = selected_biochar, selected_biochar_details = selected_biochar_details, selected_biochar_details_dict = selected_biochar_details_dict, submitted_priorities=submitted_priorities, amendment_rec_render = amendment_rec_render,application_rate = application_rate, app_rate_benefits = app_rate_benefits, show_priorities_form=False)
         
     
     # If GET request or form not submitted
@@ -687,13 +721,14 @@ def analyze_soil_and_biochar():
         soil_data = session.get('soil_data', {})
         data = session.get('data', {})
         closest_biochars = {}
+        selected_biochar = None
+        selected_biochar_details = None
         app_rate_benefits = []
-        return render_template('index_1.html', priority_results=priority_results, soil_data=soil_data, messages=messages, lime_message=lime_message, crops=states, crop_data=data, biochar_results=biochar_results, biochars=closest_biochars, soil_type = soil_type, moisture_message=moisture_message, organic_matter_message = organic_matter_message, priority_list=priority_list, selected_biochar = selected_biochar, selected_biochar_details = selected_biochar_details, show_priorities_form=False)
+        submitted_priorities = {}
+        return render_template('sdi_biochar_search15.html', priority_results=priority_results, soil_data=soil_data, messages=messages, lime_message=lime_message, crops=states, crop_data=data, biochar_results=biochar_results, biochars=closest_biochars, soil_type = soil_type, moisture_message=moisture_message, organic_matter_message = organic_matter_message, priority_list=priority_list, selected_biochar = selected_biochar, selected_biochar_details = selected_biochar_details, submitted_priorities=submitted_priorities, show_priorities_form=False)
     
-
-
 if __name__ == "__main__":
-    app.run(debug=True, port=5003)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
 
 
 
