@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Entry Form</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        // Function to fetch crops based on the selected state
+        async function fetchCropsByState() {
+            const state = document.getElementById('state').value;
+            const cropDropdown = document.getElementById('crop');
+    
+            if (state) {
+                try {
+                    const response = await fetch(`/get_crops/${state}`);
+                    
+                    // Check if the response is OK
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch crops');
+                    }
+    
+                    const data = await response.json();
+    
+                    // Clear existing options
+                    cropDropdown.innerHTML = '<option value="">Select a crop</option>';
+    
+                    // Populate the dropdown with new options
+                    data.crops.forEach(crop => {
+                        const option = document.createElement('option');
+                        option.value = crop;
+                        option.textContent = crop;
+                        cropDropdown.appendChild(option);
+                    });
+    
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Data Entry Form</h1>
+
+    <form method="post" action="/analyze_soil_and_biochar">
+        <label for="moisture">Soil Moisture (%):</label>
+        <input type="text" id="moisture" name="moisture" value="{{ soil_data['Soil Moisture (%)'] }}" required>
+        <br><br>
+
+        <label for="organic_matter">Organic Matter (%):</label>
+        <input type="text" id="organic_matter" name="organic_matter" value="{{ soil_data['Organic Matter (%)'] }}" required>
+        <br><br>
+
+        <label for="phosphorus">Phosphorus (ppm):</label>
+        <input type="text" id="phosphorus" name="phosphorus" value="{{ soil_data['Phosphorus (ppm)'] }}" required>
+        <br><br>
+
+        <label for="potassium">Potassium (ppm):</label>
+        <input type="text" id="potassium" name="potassium" value="{{ soil_data['Potassium (ppm)'] }}" required>
+        <br><br>
+
+        <label for="available_N">Plant available N (either NH4+/NO3-) (ppm):</label>
+        <input type="text" id="available_N" name="available_N" value="{{ soil_data['Plant available Nitrogen (either NH4+/NO3-) (ppm)'] }}" required>
+        <br><br>
+
+        <label for="pH">pH:</label>
+        <input type="text" id="pH" name="pH" value="{{ soil_data['pH'] }}" required>
+        <br><br>
+
+        <label for="sand">Sand (%):</label>
+        <input type="text" id="sand" name="sand" value="{{ soil_data['Sand (%)'] }}" required>
+        <br><br>
+
+        <label for="silt">Silt (%):</label>
+        <input type="text" id="silt" name="silt" value="{{ soil_data['Silt (%)'] }}" required>
+        <br><br>
+
+        <label for="clay">Clay (%):</label>
+        <input type="text" id="clay" name="clay" value="{{ soil_data['Clay (%)'] }}" required>
+        <br><br>
+
+        
+        <label for="state">Select your State:</label>
+        <select id="state" name="state" onchange="fetchCropsByState()">
+            <option value="">Select a state</option>
+            {% for state in crops %}
+            <option value="{{ state }}">{{ state }}</option>
+            {% endfor %}
+        </select>
+    
+        <label for="crop">Select a Crop:</label>
+        <select id="crop" name="crop">
+            <option value="{{ crop }}">{{ crop }}</option>
+        </select>
+        <br><br>
+
+        <h3>Or Input Custom Crop Requirements:</h3>
+        <label for="custom_nitrogen">Nitrogen Need (lbs/acre):</label>
+        <input type="number" name="custom_nitrogen" step="any" id="custom_nitrogen">
+
+        <label for="custom_phosphorus">Phosphorus Need (lbs/acre):</label>
+        <input type="number" name="custom_phosphorus" step="any" id="custom_phosphorus">
+
+        <label for="custom_potassium">Potassium Need (lbs/acre):</label>
+        <input type="number" name="custom_potassium" step="any" id="custom_potassium">
+
+        <label for="custom_ph_min">pH Minimum:</label>
+        <input type="number" name="custom_ph_min" step="0.1" id="custom_ph_min">
+
+        <label for="custom_ph_max">pH Maximum:</label>
+        <input type="number" name="custom_ph_max" step="0.1" id="custom_ph_max">
+        <br><br>
+        <br><br>
+
+        <label for="zip_code">Enter Your Zip Code:</label>
+        <input type="text" id="zip_code" name="zip_code" value="{{ zip_code }}" required>
+        <br><br>
+
+        <button type="submit">Submit</button>
+    </form>
+    <br><br>
+ 
+
+    <!-- Display results after form submission -->
+    {% if soil_data %}
+    <h2>Submitted Data:</h2>
+    <ul>
+      {% for key, value in soil_data.items() %}
+        <li>{{ key }}: {{ value }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    <!-- Display guidance messsages after form submission -->
+    {% if moisture_message %}
+    <h2>Messages (please read):</h2>
+    <div class="alert alert-info">
+        {{ moisture_message }}
+    </div>
+    {% endif %}
+
+    {% if organic_matter_message %}
+    <div class="alert alert-info">
+        {{organic_matter_message}}
+    </div>
+    {% endif %}
+    
+    {% if lime_message %}
+    <div class="alert alert-info">
+        {{lime_message}}
+    </div>
+    {% endif %}
+
+    {% if messages %}
+    <div class="alert alert-info">
+        {{ messages }}
+    </div>
+    {% endif %}
+    
+    <!-- Soil Classification -->
+    {% if soil_type %}
+    <h2>Soil Classification:</h2>
+    <p>Your soil type is: {{ soil_type }}</p>
+    {% endif %}
+
+
+    <!-- Crop requirements -->
+    {% if crop_data %}
+        <h2>{{ crop_data.get('crop') }} requirements your soil is deficient in:</h2>
+        <ul>
+            <li>Required Phosphorus (lbs/acre): {{ crop_data.get('Required Phosphorus (lbs/acre)') }}</li>
+            <li>Required Potassium (lbs/acre): {{ crop_data.get('Required Potassium (lbs/acre)') }}</li>
+            <li>Required Nitrogen (lbs/acre): {{ crop_data.get('Required Nitrogen (lbs/acre)') }}</li>
+            {% if 'Required Lime (lbs/acre)' in crop_data %}
+                <li>Required Lime (lbs/acre): {{ crop_data.get('Required Lime (lbs/acre)') }}</li>
+            {% endif %}
+        </ul>
+    {% endif %}
+
+    <!-- Biochar Recommendations -->
+    {% if biochar_results %}
+        <h2>Some Biochar Options Closest to You:</h2>
+
+    <!-- Closest Biochar Recommendations -->
+    {% if biochars %}
+        <h2>Closest Biochar Locations:</h2>
+        <table border="1">
+            <tr>
+                <th>Biochar Name</th>
+                <th>Address</th>
+                <th>City</th>
+                <th>State</th>
+                <th>Distance (miles)</th>
+            </tr>
+            {% for biochar, distance in biochars %}
+            <tr>
+                <td>{{ biochar.Sample }}</td>
+                <td>{{ biochar.Address }}</td>
+                <td>{{ biochar.City }}</td>
+                <td>{{ biochar.State }}</td>
+                <td>{{ distance }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
+    {% endif %}
+
+    {% if show_priorities_form %}
+        <form action="/analyze_soil_and_biochar" method="POST"> 
+            <label for="priority1">Priority 1:</label>
+            <select name="priority1">
+                {% for p in priority_list %}
+                    <option value="{{ p }}">{{ p }}</option>
+            {% endfor %}
+            </select><br>
+
+            <label for="priority2">Priority 2:</label>
+            <select name="priority2">
+                {% for p in priority_list %}
+                    <option value="{{ p }}">{{ p }}</option>
+                {% endfor %}
+            </select><br>
+
+            <label for="priority3">Priority 3:</label>
+            <select name="priority3">
+                {% for p in priority_list %}
+                    <option value="{{ p }}">{{ p }}</option>
+                {% endfor %}
+            </select><br>
+
+            <button type="submit">Submit</button>
+        </form>
+        <br><br>
+    {% endif %}
+    
+    {% if priority_results %}
+        <h3>Biochar in the Atlas that meet your Priorities:</h3>
+        {% for key, result in priority_results.items() %}
+            <h4>{{ key }}: {{ submitted_priorities[key] }}</h4>
+            <table border="1">
+                <thead>
+                    <tr>
+                        {% for col in result.columns %}
+                            <th>{{ col }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in result.data %}
+                        <tr>
+                            {% for cell in row %}
+                                <td>{{ cell }}</td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endfor %}
+    {% endif %}
+
+    {% if ranked_samples %}
+        <h3>Ranked Biochar Recommendations where highest values are most highly recommended</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Sample Name</th>
+                    <th>Total Points</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sample, total_points in ranked_samples %}
+                <tr>
+                    <td>{{ sample }}</td>
+                    <td>{{ total_points }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <h3>Amendment Rate Calculator</h3>
+        <p>Select a biochar recommendation from the dropdown below:</p>
+        <form method="POST" action="/analyze_soil_and_biochar">
+            <label for="biochar-dropdown">Biochar Recommendations:</label>
+            <select id="biochar-dropdown" name="selected_biochar">
+                {% for sample, total_points in ranked_samples %}
+                    <option value="{{ sample }}">{{ sample }} ({{ total_points }} points)</option>
+                {% endfor %}
+            </select>
+            <button type="submit">Submit</button>
+        </form>
+    {% endif %}
+
+    {% if selected_biochar_details_dict %}
+        <h3> Soil benefits from 1 ton of {{ selected_biochar }}</h3>
+        <table border="1">
+            <tr>
+                <th>Property</th>
+                <th>Value (lbs/ton applied)</th>
+            </tr>
+            <tr>
+                <td> Plant Available N</td>
+                <td>{{ selected_biochar_details_dict['availableN'] }}</td>
+            </tr>
+            <tr>
+                <td>Extractable P</td>
+                <td>{{ selected_biochar_details_dict['extractableP'] }}</td>
+            </tr>
+            <tr>
+                <td>Extractable K</td>
+                <td>{{ selected_biochar_details_dict['extractableK'] }}</td>
+            </tr>
+            <tr>
+                <td>Extractable Ca</td>
+                <td>{{ selected_biochar_details_dict['extractableCa'] }}</td>
+            </tr>
+            <tr>
+                <td>Extractable Mg</td>
+                <td>{{ selected_biochar_details_dict['extractableMg'] }}</td>
+            </tr>
+            <tr>
+                <td>CaCO3</td>
+                <td>{{ selected_biochar_details_dict['caco3'] }}</td>
+            </tr>
+            <tr>
+                <td>Corg</td>
+                <td>{{ selected_biochar_details_dict['corg'] }}</td>
+            </tr>
+        </table>
+    {% endif %}
+
+    {% if amendment_rec_render %}
+        <h3>Amendment Recommendations</h3>
+        <table>
+            <thead>
+                <tr>
+                    {% for column in amendment_rec_render['columns'] %}
+                        <th>{{ column }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in amendment_rec_render['data'] %}
+                    <tr>
+                        {% for value in row %}
+                            <td>{{ value }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h3>Calculate Benefits from Application Rate</h3>
+        <form method="POST" action="/analyze_soil_and_biochar">
+            <input type="hidden" name="selected_biochar" value="{{ selected_biochar }}">
+            <label for="application_rate">Application Rate (tons/acre):</label>
+            <input type="number" name="application_rate" id="application_rate" step="0.1" min="0" required>
+
+            <button type="submit">Calculate Benefits</button>
+        </form>  
+    {% endif %}
+
+    {% if app_rate_benefits %}
+        <input type="hidden" name="selected_biochar" value="{{ selected_biochar }}">
+        <h4 class="mt-4">Soil benefits from {{ application_rate }} tons/acre application rate of {{ selected_biochar }}:</h4>
+        <table class="table table-bordered table-striped">
+        <thead class="table-dark">
+                <tr>
+                    <th>Soil Property</th>
+                    <th>Total Applied</th>
+                </tr>
+        </thead>
+            <tbody>
+                {% for benefit in app_rate_benefits %}
+                    <tr>
+                        <td>{{ benefit[0] }}</td>
+                        <td>{{ benefit[1] }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% elif app_rate_benefits is none %}
+        <p class="text-danger mt-3">Please enter a valid application rate greater than 0.</p>
+    {% endif %}
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>    
