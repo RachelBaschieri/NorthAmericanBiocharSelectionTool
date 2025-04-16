@@ -3,7 +3,6 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import asc, func, desc
 from geopy.geocoders import Nominatim 
 from geopy.distance import geodesic
-from dotenv import load_dotenv
 import os
 
 app = Flask(__name__)
