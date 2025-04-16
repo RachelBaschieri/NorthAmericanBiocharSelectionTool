@@ -20,8 +20,7 @@ app.secret_key = secret_key
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 
 db = SQLAlchemy(app)
-import logging
-logging.basicConfig(level=logging.DEBUG)
+
 @app.route('/')
 def index():
     return redirect(url_for('analyze_soil_and_biochar'))
@@ -191,7 +190,6 @@ def get_crops(state):
 
 @app.route('/analyze_soil_and_biochar', methods=['GET', 'POST'])
 def analyze_soil_and_biochar():
-    app.logger.debug("Got to analyze_soil_and_biochar")
     states = [state[0] for state in db.session.query(Crop.State).distinct().order_by(Crop.State.asc()).all()]
     session['states'] = states
     messages = {}
