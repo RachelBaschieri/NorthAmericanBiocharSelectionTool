@@ -577,7 +577,7 @@ def analyze_soil_and_biochar():
                 CaCO3Eq.CaCO3lb_1ton,
                 HCratio.Corglb_1ton,
                 HCratio.HCorg_ratio,
-                SA.Average_pore_diameter_nm,
+                SA.Average_pore_diameter_um,
                 SA.SA_mean_m2_g
             ).join(ExtractableP, PlantAvailableN.ID == ExtractableP.ID).join(ExtractableNutrients, ExtractableP.ID == ExtractableNutrients.ID).join(CaCO3Eq, ExtractableNutrients.ID == CaCO3Eq.ID).join(HCratio, CaCO3Eq.ID == HCratio.ID).join(SA, HCratio.ID == SA.ID).filter(PlantAvailableN.Sample == selected_biochar).first()
                 
