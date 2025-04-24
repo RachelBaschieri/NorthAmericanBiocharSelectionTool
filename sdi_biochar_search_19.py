@@ -643,7 +643,7 @@ def analyze_soil_and_biochar():
 
                     elif p == 'Increase drainage':
                         pore = pore_diam
-                        amendment_rate_rec.append(("Increase draingae", pore, "Amend soil with up to 10 tons/acre."))
+                        amendment_rate_rec.append(("Increase drainage", pore, "Amend soil with up to 10 tons/acre."))
 
                     elif p == 'Increase water retention':
                         surf = surface_area
