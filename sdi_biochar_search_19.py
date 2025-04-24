@@ -105,9 +105,8 @@ class SA(db.Model):
     Sample = db.Column(db.String(50), nullable=False)
     SA_mean_m2_g = db.Column(db.Float)
     SA_std = db.Column(db.Float)
-    SA_CV = db.Column(db.Float)
     TPV_ave_cm3_g = db.Column(db.Float)
-    Average_pore_diameter_nm = db.Column(db.Float)
+    Average_pore_diameter_um = db.Column(db.Float)
 
 class HCratio(db.Model):
     __tablename__ = 'H:C ratio'
@@ -521,9 +520,9 @@ def analyze_soil_and_biochar():
                 priority_results[key] = {'columns': columns, 'data': query_result}
 
             elif p == 'Increase drainage':
-                pre_query_result = SA.query.order_by(desc(SA.Average_pore_diameter_nm)).limit(5).all()
-                query_result = [(row.Sample, row.Average_pore_diameter_nm) for row in pre_query_result]
-                columns = ['Sample', 'Average pore diameter (nm)']
+                pre_query_result = SA.query.order_by(desc(SA.Average_pore_diameter_um)).limit(5).all()
+                query_result = [(row.Sample, row.Average_pore_diameter_um) for row in pre_query_result]
+                columns = ['Sample', 'Average pore diameter (um)']
                 priority_results[key] = {'columns': columns, 'data': query_result}
 
             elif p == 'Increase water retention':
