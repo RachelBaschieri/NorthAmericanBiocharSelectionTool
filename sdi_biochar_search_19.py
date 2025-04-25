@@ -169,7 +169,11 @@ def get_lat_lon_from_zip(zip_code):
     geolocator = Nominatim(user_agent=user_agent)
     location = geolocator.geocode(zip_code)
     if location:
+        print(f"[DEBUG] ZIP {zip_code} resolved to: {location.address} → ({location.latitude}, {location.longitude})")
         return (location.latitude, location.longitude)
+    else:
+        print(f"[DEBUG] Failed to find coordinates for ZIP {zip_code}")
+        return None    
     return None 
 
 # Function to calculate distances
