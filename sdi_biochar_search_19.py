@@ -167,13 +167,9 @@ def classify_soil(sand, silt, clay):
 def get_lat_lon_from_zip(zip_code):
     user_agent = os.getenv("GEOLOCATOR_USER_AGENT", "biochar_search_app")
     geolocator = Nominatim(user_agent=user_agent)
-    location = geolocator.geocode(zip_code)
+    location = geolocator.geocode(zip_code, country_codes='us,ca,mx')
     if location:
-        print(f"[DEBUG] ZIP {zip_code} resolved to: {location.address} → ({location.latitude}, {location.longitude})")
-        return (location.latitude, location.longitude)
-    else:
-        print(f"[DEBUG] Failed to find coordinates for ZIP {zip_code}")
-        return None    
+        return (location.latitude, location.longitude)   
     return None 
 
 # Function to calculate distances
