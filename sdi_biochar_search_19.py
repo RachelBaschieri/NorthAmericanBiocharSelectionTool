@@ -7,6 +7,11 @@ import os
 
 app = Flask(__name__, template_folder='templates')
 
+# Make sure app cookies aren't blocked by third party cookie blockers
+app.config.update(
+    SESSION_COOKIE_SAMESITE='None',
+    SESSION_COOKIE_SECURE=True
+)
 # Securely retrieve secret key and database URL
 secret_key = os.getenv('SECRET_KEY')
 database_url = os.getenv('DATABASE_URL')
