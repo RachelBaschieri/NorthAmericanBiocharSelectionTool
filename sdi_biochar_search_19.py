@@ -571,6 +571,7 @@ def analyze_soil_and_biochar():
         priority_list= {}
         priority_results = {}
         data = session.get('data', {})
+        soil_data = session.get('soil_data', {})
         amendment_rate_rec = []
         if selected_biochar:
             selected_biochar_details = db.session.query(
@@ -677,6 +678,7 @@ def analyze_soil_and_biochar():
         organic_matter_message = session.get('organic_matter_message', None)
         lime_message = session.get('lime_message', None)
         data = session.get('data', {})
+        soil_data = session.get('soil_data', {})
         amendment_rate_rec = []
         amendment_rec_render = {}
         app_rate_benefits = []
