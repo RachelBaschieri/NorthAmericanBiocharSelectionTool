@@ -1,0 +1,1 @@
+This code runs the US National Biochar Atlas biochar selection tool, a decision support tool to guide farmers to biochar options best for their specific soil and crop. Find this tool at https://www.pnwbiochar.org/tools/national-biochar-selection-tool/
