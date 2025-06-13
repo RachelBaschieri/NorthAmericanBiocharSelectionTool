@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Soil Data Entry Form</title>
+    <title>Data Entry Form</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script>
         // Function to fetch crops based on the selected state
@@ -41,7 +41,7 @@
     </script>
 </head>
 <body>
-    <h1>Soil Data Entry Form</h1>
+    <h1>Data Entry Form</h1>
 
     <form method="post" action="/analyze_soil_and_biochar">
         <label for="moisture">Soil Moisture (%):</label>
@@ -124,7 +124,7 @@
 
     <!-- Display results after form submission -->
     {% if soil_data %}
-    <h2>Submitted Soil Data:</h2>
+    <h2>Submitted Data:</h2>
     <ul>
       {% for key, value in soil_data.items() %}
         <li>{{ key }}: {{ value }}</li>
@@ -291,7 +291,7 @@
     {% endif %}
 
     {% if selected_biochar_details_dict %}
-        <h3> Soil benefits from 1 dry ton of {{ selected_biochar }}</h3>
+        <h3> Soil benefits from 1 ton of {{ selected_biochar }}</h3>
         <table border="1">
             <tr>
                 <th>Property</th>
@@ -349,10 +349,11 @@
             </tbody>
         </table>
 
+
         <h3>Calculate Benefits from Application Rate</h3>
         <form method="POST" action="/analyze_soil_and_biochar">
             <input type="hidden" name="selected_biochar" value="{{ selected_biochar }}">
-            <label for="application_rate">Application Rate (dry tons/acre):</label>
+            <label for="application_rate">Application Rate (tons/acre):</label>
             <input type="number" name="application_rate" id="application_rate" step="0.1" min="0" required>
 
             <button type="submit">Calculate Benefits</button>
@@ -361,7 +362,7 @@
 
     {% if app_rate_benefits %}
         <input type="hidden" name="selected_biochar" value="{{ selected_biochar }}">
-        <h4 class="mt-4">Soil benefits from {{ application_rate }} dry tons/acre application rate of {{ selected_biochar }}:</h4>
+        <h4 class="mt-4">Soil benefits from {{ application_rate }} tons/acre application rate of {{ selected_biochar }}:</h4>
         <table class="table table-bordered table-striped">
         <thead class="table-dark">
                 <tr>
@@ -378,9 +379,36 @@
                 {% endfor %}
             </tbody>
         </table>
-    {% elif app_rate_benefits is none %}
+    
+        {% if selected_biochar_details %}
+        <h4 class="mt-5">If this biochar product no longer exists, here are its production details so you can look for similar biochar:</h4>
+        <table class="table table-bordered table-striped table-hover align-middle text-center">
+            <thead class="table-dark">
+                <tr>
+                    <th class="px-3 py-2">Feedstock Type</th>
+                    <th class="px-3 py-2">Feedstock Details</th>
+                    <th class="px-3 py-2">Temperature °C</th>
+                    <th class="px-3 py-2">Production Method</th>
+                    <th class="px-3 py-2">Residence Time (minutes)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="px-3 py-2">{{ selected_biochar_details.feedstock_type or "N/A" }}</td>
+                    <td class="px-3 py-2">{{ selected_biochar_details.feedstock_details or "N/A" }}</td>
+                    <td class="px-3 py-2">{{ selected_biochar_details.hht_c or "N/A" }}</td>
+                    <td class="px-3 py-2">{{ selected_biochar_details.production_method or "N/A" }}</td>
+                    <td class="px-3 py-2">{{ selected_biochar_details.residence_time or "N/A" }}</td>
+                </tr>
+            </tbody>
+        </table> 
+        {% endif %}
+    
+        {% elif app_rate_benefits is none %}
         <p class="text-danger mt-3">Please enter a valid application rate greater than 0.</p>
     {% endif %}
+    
+
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 
 </body>
