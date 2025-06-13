@@ -463,7 +463,7 @@ def analyze_soil_and_biochar():
         # After processing the soil data, display the priorities form
         show_priorities_form = True
        
-        return render_template('sdi_search_23.html', soil_data=soil_data, messages=messages, lime_message=lime_message, crops=states, crop_data=data, biochar_results=biochar_results, biochars=closest_biochars, soil_type = soil_type, moisture_message=moisture_message, organic_matter_message = organic_matter_message, priority_list=priority_list, show_priorities_form=show_priorities_form)
+        return render_template('sdi_biochar_search15.html', soil_data=soil_data, messages=messages, lime_message=lime_message, crops=states, crop_data=data, biochar_results=biochar_results, biochars=closest_biochars, soil_type = soil_type, moisture_message=moisture_message, organic_matter_message = organic_matter_message, priority_list=priority_list, show_priorities_form=show_priorities_form)
 
    
     elif request.method == 'POST' and 'priority1' in request.form:
@@ -569,7 +569,7 @@ def analyze_soil_and_biochar():
         # Sort samples by total points in descending order
         ranked_samples = sorted(points.items(), key=lambda x: x[1], reverse=True)
         
-        return render_template('sdi_search_23.html', priority_results = priority_results, soil_data=soil_data, messages=messages, lime_message=lime_message, crops=states, crop_data=data, biochar_results=biochar_results, soil_type = soil_type, moisture_message=moisture_message, organic_matter_message = organic_matter_message, priority_list=priority_list, submitted_priorities=submitted_priorities, ranked_samples=ranked_samples, show_priorities_form=False)
+        return render_template('sdi_biochar_search15.html', priority_results = priority_results, soil_data=soil_data, messages=messages, lime_message=lime_message, crops=states, crop_data=data, biochar_results=biochar_results, soil_type = soil_type, moisture_message=moisture_message, organic_matter_message = organic_matter_message, priority_list=priority_list, submitted_priorities=submitted_priorities, ranked_samples=ranked_samples, show_priorities_form=False)
     
     elif request.method == 'POST' and 'selected_biochar' in request.form and 'application_rate' not in request.form:
         selected_biochar = request.form.get('selected_biochar')
@@ -683,7 +683,7 @@ def analyze_soil_and_biochar():
                 selected_biochar_details = None
                 selected_biochar_details_dict = {}
                 amendment_rec_render = {}
-        return render_template('sdi_search_23.html', priority_results=priority_results, soil_data=soil_data, messages=messages, lime_message=lime_message, crops=states, crop_data=data, biochar_results=biochar_results, soil_type = soil_type, moisture_message=moisture_message, organic_matter_message = organic_matter_message, priority_list=priority_list, selected_biochar = selected_biochar, selected_biochar_details = selected_biochar_details, selected_biochar_details_dict = selected_biochar_details_dict, amendment_rec_render = amendment_rec_render,submitted_priorities=submitted_priorities, show_priorities_form=False)
+        return render_template('sdi_biochar_search15.html', priority_results=priority_results, soil_data=soil_data, messages=messages, lime_message=lime_message, crops=states, crop_data=data, biochar_results=biochar_results, soil_type = soil_type, moisture_message=moisture_message, organic_matter_message = organic_matter_message, priority_list=priority_list, selected_biochar = selected_biochar, selected_biochar_details = selected_biochar_details, selected_biochar_details_dict = selected_biochar_details_dict, amendment_rec_render = amendment_rec_render,submitted_priorities=submitted_priorities, show_priorities_form=False)
         
         
     
@@ -731,7 +731,7 @@ def analyze_soil_and_biochar():
         
         else:
             app_rate_benefits = None
-        return render_template('sdi_search_23.html', priority_results=priority_results, soil_data=soil_data, messages=messages, lime_message=lime_message, crops=states, crop_data=data, biochar_results=biochar_results, soil_type = soil_type, moisture_message=moisture_message, organic_matter_message = organic_matter_message, priority_list=priority_list, selected_biochar = selected_biochar, selected_biochar_details = selected_biochar_details, selected_biochar_details_dict = selected_biochar_details_dict, submitted_priorities=submitted_priorities, amendment_rec_render = amendment_rec_render,application_rate = application_rate, app_rate_benefits = app_rate_benefits, show_priorities_form=False)
+        return render_template('sdi_biochar_search15.html', priority_results=priority_results, soil_data=soil_data, messages=messages, lime_message=lime_message, crops=states, crop_data=data, biochar_results=biochar_results, soil_type = soil_type, moisture_message=moisture_message, organic_matter_message = organic_matter_message, priority_list=priority_list, selected_biochar = selected_biochar, selected_biochar_details = selected_biochar_details, selected_biochar_details_dict = selected_biochar_details_dict, submitted_priorities=submitted_priorities, amendment_rec_render = amendment_rec_render,application_rate = application_rate, app_rate_benefits = app_rate_benefits, show_priorities_form=False)
         
     
     # If GET request or form not submitted
@@ -752,7 +752,7 @@ def analyze_soil_and_biochar():
         selected_biochar_details = session.get('selected_biochar_details', None)
         app_rate_benefits = []
         submitted_priorities = {}
-        return render_template('sdi_search_23.html', priority_results=priority_results, soil_data=soil_data, messages=messages, lime_message=lime_message, crops=states, crop_data=data, biochar_results=biochar_results, biochars=closest_biochars, soil_type = soil_type, moisture_message=moisture_message, organic_matter_message = organic_matter_message, priority_list=priority_list, selected_biochar = selected_biochar, selected_biochar_details = selected_biochar_details, submitted_priorities=submitted_priorities, show_priorities_form=False)
+        return render_template('sdi_biochar_search15.html', priority_results=priority_results, soil_data=soil_data, messages=messages, lime_message=lime_message, crops=states, crop_data=data, biochar_results=biochar_results, biochars=closest_biochars, soil_type = soil_type, moisture_message=moisture_message, organic_matter_message = organic_matter_message, priority_list=priority_list, selected_biochar = selected_biochar, selected_biochar_details = selected_biochar_details, submitted_priorities=submitted_priorities, show_priorities_form=False)
     
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
